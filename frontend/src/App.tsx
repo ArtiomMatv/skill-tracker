@@ -1,73 +1,14 @@
-import { gql } from '@apollo/client'
 import { useMutation, useQuery } from '@apollo/client/react'
 import { useMemo, useState } from 'react'
+import {
+  ADD_ASSESSMENT,
+  ADD_EMPLOYEE,
+  ADD_SKILL,
+  ALL_DATA,
+} from './graphql/documents'
 import './App.css'
-
-const ALL_DATA = gql`
-  query AllData {
-    allData {
-      employees {
-        id
-        name
-      }
-      skills {
-        id
-        name
-      }
-      assessments {
-        id
-        score
-        date
-        employee {
-          id
-        }
-        skill {
-          id
-        }
-      }
-    }
-  }
-`
-
-const ADD_ASSESSMENT = gql`
-  mutation AddAssessment(
-    $employeeId: Int!
-    $skillId: Int!
-    $score: Int!
-    $date: Date!
-  ) {
-    addAssessment(
-      employeeId: $employeeId
-      skillId: $skillId
-      score: $score
-      date: $date
-    ) {
-      ok
-      error
-      assessment {
-        id
-        score
-        date
-        employee {
-          id
-        }
-        skill {
-          id
-        }
-      }
-    }
-  }
-`
-
-type Employee = { id: string; name: string }
-type Skill = { id: string; name: string }
-type Assessment = {
-  id: string
-  score: number
-  date: string
-  employee: { id: string }
-  skill: { id: string }
-}
+import type { Assessment, Employee, Skill } from './matrixUtils'
+import { averageForCell, todayISODate } from './matrixUtils'
 
 type AddAssessmentResult = {
   addAssessment: {
@@ -77,25 +18,18 @@ type AddAssessmentResult = {
   }
 }
 
-function todayISODate(): string {
-  const d = new Date()
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
+type AddEmployeeResult = {
+  addEmployee: {
+    ok: boolean
+    error: string | null
+  }
 }
 
-function averageForCell(
-  assessments: Assessment[],
-  employeeId: string,
-  skillId: string,
-): { average: number; count: number } | null {
-  const scores = assessments.filter(
-    (a) => a.employee.id === employeeId && a.skill.id === skillId,
-  )
-  if (scores.length === 0) return null
-  const sum = scores.reduce((acc, a) => acc + a.score, 0)
-  return { average: sum / scores.length, count: scores.length }
+type AddSkillResult = {
+  addSkill: {
+    ok: boolean
+    error: string | null
+  }
 }
 
 function App() {
@@ -107,29 +41,32 @@ function App() {
     }
   }>(ALL_DATA)
 
-  const [addAssessment, { loading: saving }] = useMutation<
-    AddAssessmentResult,
-    {
-      employeeId: number
-      skillId: number
-      score: number
-      date: string
-    }
-  >(ADD_ASSESSMENT, {
-    onCompleted: (res) => {
-      if (res.addAssessment?.ok) void refetch()
-    },
-  })
+  const [addAssessment, { loading: savingAssessment }] =
+    useMutation<AddAssessmentResult>(ADD_ASSESSMENT)
+  const [addEmployee, { loading: savingEmployee }] =
+    useMutation<AddEmployeeResult>(ADD_EMPLOYEE)
+  const [addSkill, { loading: savingSkill }] = useMutation<AddSkillResult>(ADD_SKILL)
 
-  const employees = data?.allData.employees ?? []
-  const skills = data?.allData.skills ?? []
-  const assessments = data?.allData.assessments ?? []
+  const employees = useMemo(
+    () => data?.allData.employees ?? [],
+    [data],
+  )
+  const skills = useMemo(() => data?.allData.skills ?? [], [data])
+  const assessments = useMemo(
+    () => data?.allData.assessments ?? [],
+    [data],
+  )
+
+  const [newEmployeeName, setNewEmployeeName] = useState('')
+  const [newSkillName, setNewSkillName] = useState('')
+  const [teamEmployeeMsg, setTeamEmployeeMsg] = useState<string | null>(null)
+  const [teamSkillMsg, setTeamSkillMsg] = useState<string | null>(null)
 
   const [employeeId, setEmployeeId] = useState('')
   const [skillId, setSkillId] = useState('')
   const [score, setScore] = useState('3')
   const [date, setDate] = useState(todayISODate)
-  const [formError, setFormError] = useState<string | null>(null)
+  const [assessmentMsg, setAssessmentMsg] = useState<string | null>(null)
 
   const sortedEmployees = useMemo(
     () => [...employees].sort((a, b) => a.name.localeCompare(b.name)),
@@ -140,18 +77,46 @@ function App() {
     [skills],
   )
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleAddEmployee(e: React.FormEvent) {
     e.preventDefault()
-    setFormError(null)
+    setTeamEmployeeMsg(null)
+    const { data: mut } = await addEmployee({
+      variables: { name: newEmployeeName },
+    })
+    if (mut?.addEmployee?.ok) {
+      setNewEmployeeName('')
+      await refetch()
+    } else {
+      setTeamEmployeeMsg(mut?.addEmployee?.error ?? 'Could not add person.')
+    }
+  }
+
+  async function handleAddSkill(e: React.FormEvent) {
+    e.preventDefault()
+    setTeamSkillMsg(null)
+    const { data: mut } = await addSkill({
+      variables: { name: newSkillName },
+    })
+    if (mut?.addSkill?.ok) {
+      setNewSkillName('')
+      await refetch()
+    } else {
+      setTeamSkillMsg(mut?.addSkill?.error ?? 'Could not add skill.')
+    }
+  }
+
+  async function handleAssessmentSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setAssessmentMsg(null)
     const eid = Number(employeeId)
     const sid = Number(skillId)
     const sc = Number(score)
     if (!employeeId || !skillId) {
-      setFormError('Choose an employee and a skill.')
+      setAssessmentMsg('Choose an employee and a skill.')
       return
     }
     if (!Number.isInteger(sc) || sc < 1 || sc > 5) {
-      setFormError('Score must be between 1 and 5.')
+      setAssessmentMsg('Score must be between 1 and 5.')
       return
     }
     const { data: mutData } = await addAssessment({
@@ -163,37 +128,120 @@ function App() {
       },
     })
     if (!mutData?.addAssessment?.ok) {
-      setFormError(mutData?.addAssessment?.error ?? 'Could not save assessment.')
+      setAssessmentMsg(
+        mutData?.addAssessment?.error ?? 'Could not save assessment.',
+      )
       return
     }
+    await refetch()
   }
 
-  if (loading) return <p className="muted">Loading…</p>
+  if (loading)
+    return (
+      <div className="shell shell--center">
+        <p className="muted">Loading…</p>
+      </div>
+    )
   if (error)
     return (
-      <p className="error">
-        Could not load data ({error.message}). Is the API running at{' '}
-        <code>{import.meta.env.VITE_GRAPHQL_URL ?? 'http://127.0.0.1:8000/graphql/'}</code>
-        ?
-      </p>
+      <div className="shell shell--center">
+        <p className="error">
+          Could not load data ({error.message}). Is the API running at{' '}
+          <code>
+            {import.meta.env.VITE_GRAPHQL_URL ?? 'http://127.0.0.1:8000/graphql/'}
+          </code>
+          ?
+        </p>
+      </div>
     )
 
   return (
-    <div className="page">
-      <header className="header">
+    <div className="shell">
+      <header className="hero">
+        <p className="eyebrow">Skill management · take-home demo</p>
         <h1>Skill tracker</h1>
-        <p className="muted">
-          Average assessment score per employee and skill. Cells below 3 are
-          highlighted.
+        <p className="lead">
+          Average score per person and skill. Cells below 3 are flagged so gaps
+          stay visible—similar to how an LMS surfaces skill and compliance gaps
+          (see{' '}
+          <a
+            href="https://www.pluvo.com/nl/learning-management-systeem"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Pluvo
+          </a>
+          ).
         </p>
       </header>
 
-      <section className="panel">
-        <h2>Score matrix</h2>
+      <section className="panel" aria-labelledby="people-skills-heading">
+        <h2 id="people-skills-heading">People &amp; skills</h2>
+        <p className="muted panel-intro">
+          <strong>Employees</strong> are the people you assess (matrix rows).{' '}
+          <strong>Skills</strong> are the columns. Add both here, then log
+          assessments—no Django admin required for a quick demo.
+        </p>
+        <div className="two-col">
+          <form className="stacked-form" onSubmit={handleAddEmployee}>
+            <h3 className="h3">Add a person</h3>
+            <label className="field">
+              <span className="field-label">Name</span>
+              <input
+                className="field-input"
+                value={newEmployeeName}
+                onChange={(e) => setNewEmployeeName(e.target.value)}
+                placeholder="e.g. Jamie de Vries"
+                maxLength={200}
+                autoComplete="name"
+              />
+            </label>
+            <button
+              type="submit"
+              className="btn btn--primary"
+              disabled={savingEmployee}
+            >
+              {savingEmployee ? 'Adding…' : 'Add to matrix'}
+            </button>
+            {teamEmployeeMsg && (
+              <p className="error" role="alert">
+                {teamEmployeeMsg}
+              </p>
+            )}
+          </form>
+          <form className="stacked-form" onSubmit={handleAddSkill}>
+            <h3 className="h3">Add a skill</h3>
+            <label className="field">
+              <span className="field-label">Skill name</span>
+              <input
+                className="field-input"
+                value={newSkillName}
+                onChange={(e) => setNewSkillName(e.target.value)}
+                placeholder="e.g. Onboarding, GraphQL, Safety"
+                maxLength={200}
+              />
+            </label>
+            <button
+              type="submit"
+              className="btn btn--primary"
+              disabled={savingSkill}
+            >
+              {savingSkill ? 'Adding…' : 'Add skill column'}
+            </button>
+            {teamSkillMsg && (
+              <p className="error" role="alert">
+                {teamSkillMsg}
+              </p>
+            )}
+          </form>
+        </div>
+      </section>
+
+      <section className="panel" aria-labelledby="matrix-heading">
+        <h2 id="matrix-heading">Score matrix</h2>
         {employees.length === 0 || skills.length === 0 ? (
           <p className="muted">
-            Add at least one employee and one skill (via Django admin or your
-            own seed) to see the matrix.
+            Add at least one person and one skill above to see the matrix.
           </p>
         ) : (
           <div className="table-wrap">
@@ -201,7 +249,7 @@ function App() {
               <thead>
                 <tr>
                   <th className="sticky-corner" scope="col">
-                    Employee / skill
+                    Person / skill
                   </th>
                   {sortedSkills.map((s) => (
                     <th key={s.id} scope="col" title={s.name}>
@@ -256,12 +304,17 @@ function App() {
         )}
       </section>
 
-      <section className="panel">
-        <h2>Add assessment</h2>
-        <form className="form" onSubmit={handleSubmit}>
-          <label>
-            Employee
+      <section className="panel" aria-labelledby="assessment-heading">
+        <h2 id="assessment-heading">Log assessment</h2>
+        <p className="muted panel-intro">
+          Each entry is one dated score (1–5) for a person on a skill. Multiple
+          entries average into the cell.
+        </p>
+        <form className="form" onSubmit={handleAssessmentSubmit}>
+          <label className="field">
+            <span className="field-label">Person</span>
             <select
+              className="field-input"
               value={employeeId}
               onChange={(e) => setEmployeeId(e.target.value)}
               required
@@ -274,9 +327,10 @@ function App() {
               ))}
             </select>
           </label>
-          <label>
-            Skill
+          <label className="field">
+            <span className="field-label">Skill</span>
             <select
+              className="field-input"
               value={skillId}
               onChange={(e) => setSkillId(e.target.value)}
               required
@@ -289,9 +343,13 @@ function App() {
               ))}
             </select>
           </label>
-          <label>
-            Score (1–5)
-            <select value={score} onChange={(e) => setScore(e.target.value)}>
+          <label className="field">
+            <span className="field-label">Score (1–5)</span>
+            <select
+              className="field-input"
+              value={score}
+              onChange={(e) => setScore(e.target.value)}
+            >
               {[1, 2, 3, 4, 5].map((n) => (
                 <option key={n} value={String(n)}>
                   {n}
@@ -299,21 +357,46 @@ function App() {
               ))}
             </select>
           </label>
-          <label>
-            Date
+          <label className="field">
+            <span className="field-label">Date</span>
             <input
+              className="field-input"
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
               required
             />
           </label>
-          <button type="submit" disabled={saving}>
-            {saving ? 'Saving…' : 'Save assessment'}
+          <button
+            type="submit"
+            className="btn btn--primary"
+            disabled={savingAssessment}
+          >
+            {savingAssessment ? 'Saving…' : 'Save assessment'}
           </button>
         </form>
-        {formError && <p className="error">{formError}</p>}
+        {assessmentMsg && (
+          <p className="error" role="alert">
+            {assessmentMsg}
+          </p>
+        )}
       </section>
+
+      <footer className="footer">
+        <p>
+          UI styling is an <strong>unofficial</strong> nod to modern LMS / skill
+          dashboards (teal / mint accents, airy layout)—inspired by public pages such
+          as{' '}
+          <a
+            href="https://www.pluvo.com/nl/learning-management-systeem"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Pluvo’s learning platform
+          </a>
+          . It is not Pluvo branding or a product integration.
+        </p>
+      </footer>
     </div>
   )
 }

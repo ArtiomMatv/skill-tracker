@@ -68,8 +68,44 @@ class AddAssessment(graphene.Mutation):
         return AddAssessment(ok=True, assessment=assessment, error=None)
 
 
+class AddEmployee(graphene.Mutation):
+    class Arguments:
+        name = graphene.String(required=True)
+
+    employee = graphene.Field(EmployeeType)
+    ok = graphene.Boolean(required=True)
+    error = graphene.String()
+
+    def mutate(self, info, name: str):
+        clean = (name or "").strip()
+        if not clean:
+            return AddEmployee(ok=False, employee=None, error="Name is required.")
+        clean = clean[: Employee._meta.get_field("name").max_length]
+        employee = Employee.objects.create(name=clean)
+        return AddEmployee(ok=True, employee=employee, error=None)
+
+
+class AddSkill(graphene.Mutation):
+    class Arguments:
+        name = graphene.String(required=True)
+
+    skill = graphene.Field(SkillType)
+    ok = graphene.Boolean(required=True)
+    error = graphene.String()
+
+    def mutate(self, info, name: str):
+        clean = (name or "").strip()
+        if not clean:
+            return AddSkill(ok=False, skill=None, error="Name is required.")
+        clean = clean[: Skill._meta.get_field("name").max_length]
+        skill = Skill.objects.create(name=clean)
+        return AddSkill(ok=True, skill=skill, error=None)
+
+
 class Mutation(graphene.ObjectType):
     add_assessment = AddAssessment.Field()
+    add_employee = AddEmployee.Field()
+    add_skill = AddSkill.Field()
 
 
 schema = graphene.Schema(query=Query, mutation=Mutation)

@@ -1,41 +1,174 @@
-.page {
-  max-width: 1200px;
+/* Pluvo-inspired LMS aesthetic: teal / mint surfaces (unofficial demo). */
+.shell {
+  max-width: 1120px;
   margin: 0 auto;
-  padding: 1.5rem 1.25rem 3rem;
-  font-family: system-ui, -apple-system, Segoe UI, sans-serif;
-  color: #1a1a1a;
+  padding: 2rem 1.25rem 3rem;
+  color: var(--text);
 }
 
-.header h1 {
-  margin: 0 0 0.35rem;
-  font-size: 1.75rem;
-  font-weight: 650;
+.shell--center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
 }
 
-.muted {
-  color: #555;
+.hero {
+  margin-bottom: 0.5rem;
+}
+
+.eyebrow {
+  margin: 0 0 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.hero h1 {
+  margin: 0 0 0.5rem;
+  font-size: clamp(1.85rem, 4vw, 2.35rem);
+  font-weight: 750;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  color: var(--text);
+}
+
+.lead {
   margin: 0;
-  font-size: 0.95rem;
+  max-width: 46rem;
+  font-size: 1.05rem;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.lead a {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.lead a:hover {
+  text-decoration: underline;
 }
 
 .panel {
-  margin-top: 2rem;
-  padding: 1.25rem 1.25rem 1.5rem;
-  background: #f7f7f8;
-  border: 1px solid #e2e2e5;
-  border-radius: 10px;
+  margin-top: 1.75rem;
+  padding: 1.35rem 1.35rem 1.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
 }
 
 .panel h2 {
-  margin: 0 0 1rem;
-  font-size: 1.1rem;
+  margin: 0 0 0.35rem;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.panel-intro {
+  margin: 0 0 1.25rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.h3 {
+  margin: 0 0 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.two-col {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.stacked-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem 1rem 1.1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: linear-gradient(160deg, #f0fdfa 0%, #fff 100%);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.field-label {
+  font-size: 0.8rem;
+  font-weight: 650;
+  color: var(--text-soft);
+}
+
+.field-input {
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font: inherit;
+  background: #fff;
+  color: var(--text);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.field-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-ring);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.6rem 1rem;
+  border-radius: 999px;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition:
+    background 0.15s ease,
+    transform 0.1s ease;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn--primary {
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-strong) 100%);
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(13, 148, 136, 0.28);
+}
+
+.btn--primary:hover:not(:disabled) {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
 }
 
 .table-wrap {
   overflow: auto;
   max-height: 70vh;
-  border-radius: 8px;
-  border: 1px solid #ddd;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
   background: #fff;
 }
 
@@ -48,9 +181,9 @@
 
 .matrix th,
 .matrix td {
-  padding: 0.5rem 0.65rem;
-  border-bottom: 1px solid #eee;
-  border-right: 1px solid #eee;
+  padding: 0.55rem 0.7rem;
+  border-bottom: 1px solid var(--border-subtle);
+  border-right: 1px solid var(--border-subtle);
   white-space: nowrap;
 }
 
@@ -58,30 +191,33 @@
   position: sticky;
   top: 0;
   z-index: 2;
-  background: #f0f0f2;
-  font-weight: 600;
+  background: linear-gradient(180deg, #d1fae5 0%, #ccfbf1 100%);
+  font-weight: 650;
   text-align: center;
   vertical-align: bottom;
   max-width: 8rem;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: var(--text-soft);
 }
 
 .matrix tbody th {
   position: sticky;
   left: 0;
   z-index: 1;
-  background: #fafafa;
+  background: #f0fdfa;
   text-align: left;
-  font-weight: 600;
-  border-right: 1px solid #ddd;
+  font-weight: 650;
+  border-right: 1px solid var(--border);
+  color: var(--text);
 }
 
 .sticky-corner {
   left: 0;
   z-index: 3;
-  background: #e8e8eb;
+  background: #b2f5ea;
   text-align: left;
+  color: var(--text);
 }
 
 .matrix td.cell {
@@ -90,9 +226,9 @@
 }
 
 .matrix td.cell--low {
-  background: #ffe4e4;
-  color: #7a1010;
-  font-weight: 600;
+  background: #ffe8ec;
+  color: #9b1230;
+  font-weight: 700;
 }
 
 .warn-icon {
@@ -104,51 +240,38 @@
 }
 
 .empty {
-  color: #aaa;
+  color: #94a3b8;
 }
 
 .form {
   display: grid;
   gap: 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   align-items: end;
 }
 
-.form label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #333;
-}
-
-.form select,
-.form input[type='date'] {
-  padding: 0.45rem 0.5rem;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  font: inherit;
-  background: #fff;
-}
-
-.form button {
-  padding: 0.55rem 1rem;
-  border: none;
-  border-radius: 6px;
-  background: #2563eb;
-  color: #fff;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.form button:disabled {
-  opacity: 0.65;
-  cursor: not-allowed;
-}
-
 .error {
-  color: #b00020;
-  margin: 0.75rem 0 0;
-  font-size: 0.9rem;
+  color: #b4233a;
+  margin: 0.35rem 0 0;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.footer {
+  margin-top: 2.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.footer a {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.footer a:hover {
+  text-decoration: underline;
 }

@@ -20,7 +20,45 @@ python manage.py runserver 0.0.0.0:8000
 ```
 
 - API: `http://127.0.0.1:8000/graphql/` (GraphiQL enabled in DEBUG)
-- Admin: `http://127.0.0.1:8000/admin/` — create **Employees** and **Skills** here (or any client). The SPA form only adds **Assessments** for existing employees and skills.
+- Admin: `http://127.0.0.1:8000/admin/` — optional; the SPA can create **employees**, **skills**, and **assessments** via GraphQL.
+
+### Adding people (“users”) for assessments
+
+In this app, **employees** are the people you assess (matrix rows). You can:
+
+1. **In the browser (fastest):** use **People & skills** — “Add a person” sends the `addEmployee` mutation; they immediately appear in the matrix and in the assessment dropdown.
+2. **Django admin:** `Employees` → *Add* — same underlying `Employee` model.
+
+Skills (columns) work the same way: **Add a skill** in the UI (`addSkill`) or via admin.
+
+## Tests
+
+### Backend (pytest)
+
+Function-based tests live under [`backend/tests/`](backend/tests/) (not inside the `tracker` app). File names mirror the module they cover:
+
+| File | Exercises |
+|------|-----------|
+| [`backend/tests/test_models.py`](backend/tests/test_models.py) | [`tracker/models.py`](backend/tracker/models.py) — score validation |
+| [`backend/tests/test_schema.py`](backend/tests/test_schema.py) | [`tracker/schema.py`](backend/tracker/schema.py) — `allData`, `addAssessment`, `addEmployee`, `addSkill` over HTTP |
+
+```bash
+cd backend
+source .venv/bin/activate
+pytest
+```
+
+### Frontend (Vitest)
+
+| File | Exercises |
+|------|-----------|
+| [`frontend/tests/test_matrixUtils.test.ts`](frontend/tests/test_matrixUtils.test.ts) | [`frontend/src/matrixUtils.ts`](frontend/src/matrixUtils.ts) |
+| [`frontend/tests/test_App.test.tsx`](frontend/tests/test_App.test.tsx) | [`frontend/src/App.tsx`](frontend/src/App.tsx) (smoke render with mocked GraphQL) |
+
+```bash
+cd frontend
+npm test
+```
 
 ## Frontend setup
 
@@ -37,8 +75,8 @@ Open the URL Vite prints (usually `http://localhost:5173`). CORS allows that ori
 
 ## What we skipped (time / scope)
 
-- **No seed data**: you add employees and skills via admin (or SQL); the README states this so it is not mistaken for a bug.
-- **No Docker**, pagination, auth, loading skeletons, or automated tests — per assignment.
+- **No seed script in repo**: use the in-app **People & skills** section or Django admin if you want starter rows.
+- **No Docker**, pagination, auth, or loading skeletons — kept small on purpose.
 - **Client-side averages**: the API returns flat lists; the UI aggregates. For large histories, a dedicated aggregated field or pagination would be the next step.
 
 ## Submitting
