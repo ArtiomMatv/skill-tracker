@@ -7,6 +7,11 @@ import {
   ALL_DATA,
 } from './graphql/documents'
 import './App.css'
+import {
+  buildMatrixCsv,
+  downloadCsvFile,
+  matrixCsvFilename,
+} from './exportMatrixCsv'
 import type { Assessment, Employee, Skill } from './matrixUtils'
 import { averageForCell, todayISODate } from './matrixUtils'
 
@@ -238,7 +243,20 @@ function App() {
       </section>
 
       <section className="panel" aria-labelledby="matrix-heading">
-        <h2 id="matrix-heading">Score matrix</h2>
+        <div className="panel-head">
+          <h2 id="matrix-heading">Score matrix</h2>
+          <button
+            type="button"
+            className="btn btn--secondary"
+            disabled={employees.length === 0 || skills.length === 0}
+            onClick={() => {
+              const csv = buildMatrixCsv(employees, skills, assessments)
+              downloadCsvFile(csv, matrixCsvFilename())
+            }}
+          >
+            Export matrix (CSV)
+          </button>
+        </div>
         {employees.length === 0 || skills.length === 0 ? (
           <p className="muted">
             Add at least one person and one skill above to see the matrix.

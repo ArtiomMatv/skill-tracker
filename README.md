@@ -7,6 +7,40 @@ Small full-stack demo: Django + Graphene GraphQL API (SQLite) and a React + Type
 - **Python** 3.12+ (tested with 3.12)
 - **Node.js** 20+ (or current LTS; Vite 8 may warn on other versions)
 
+## 60-second reviewer path
+
+From zero to a filled matrix:
+
+```bash
+git clone https://github.com/ArtiomMatv/skill-tracker.git
+cd skill-tracker
+
+# Terminal 1 — API
+cd backend
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py seed_demo
+python manage.py runserver 127.0.0.1:8000
+```
+
+```bash
+# Terminal 2 — UI
+cd frontend
+npm install
+npm run dev
+```
+
+1. Open the URL Vite prints (usually **http://localhost:5173/**).
+2. Scroll to **Score matrix** — you should see demo people × skills with averages; some cells are **below 3** (highlighted).
+3. Click **Export matrix (CSV)** to download the same numbers as CSV.
+4. Optionally use **Log assessment** or **People & skills** to mutate data.
+
+**URLs:** Use **http://127.0.0.1:8000/** or **http://localhost:8000/** for the API and admin in the browser. Do **not** open **http://0.0.0.0:8000/** — `0.0.0.0` is only a bind address for `runserver`, not a valid `Host` header (Django returns `DisallowedHost`).
+
+**Clean slate:** `rm backend/db.sqlite3` then run `migrate` and `seed_demo` again from `backend/`.
+
 ## Backend setup
 
 ```bash
@@ -15,8 +49,9 @@ python3 -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 python manage.py migrate
+python manage.py seed_demo   # demo employees, skills, assessments (idempotent)
 python manage.py createsuperuser   # optional, for Django admin
-python manage.py runserver 0.0.0.0:8000
+python manage.py runserver 127.0.0.1:8000
 ```
 
 - API: `http://127.0.0.1:8000/graphql/` (GraphiQL enabled in DEBUG)
@@ -28,8 +63,9 @@ In this app, **employees** are the people you assess (matrix rows). You can:
 
 1. **In the browser (fastest):** use **People & skills** — “Add a person” sends the `addEmployee` mutation; they immediately appear in the matrix and in the assessment dropdown.
 2. **Django admin:** `Employees` → *Add* — same underlying `Employee` model.
+3. **CLI:** `python manage.py seed_demo` after migrate.
 
-Skills (columns) work the same way: **Add a skill** in the UI (`addSkill`) or via admin.
+Skills (columns) work the same way: **Add a skill** in the UI (`addSkill`), admin, or `seed_demo`.
 
 ## Tests
 
@@ -41,6 +77,7 @@ Function-based tests live under [`backend/tests/`](backend/tests/) (not inside t
 |------|-----------|
 | [`backend/tests/test_models.py`](backend/tests/test_models.py) | [`tracker/models.py`](backend/tracker/models.py) — score validation |
 | [`backend/tests/test_schema.py`](backend/tests/test_schema.py) | [`tracker/schema.py`](backend/tracker/schema.py) — `allData`, `addAssessment`, `addEmployee`, `addSkill` over HTTP |
+| [`backend/tests/test_seed_demo.py`](backend/tests/test_seed_demo.py) | [`seed_demo`](backend/tracker/management/commands/seed_demo.py) management command |
 
 ```bash
 cd backend
@@ -52,6 +89,7 @@ pytest
 
 | File | Exercises |
 |------|-----------|
+| [`frontend/tests/test_exportMatrixCsv.test.ts`](frontend/tests/test_exportMatrixCsv.test.ts) | [`frontend/src/exportMatrixCsv.ts`](frontend/src/exportMatrixCsv.ts) |
 | [`frontend/tests/test_matrixUtils.test.ts`](frontend/tests/test_matrixUtils.test.ts) | [`frontend/src/matrixUtils.ts`](frontend/src/matrixUtils.ts) |
 | [`frontend/tests/test_App.test.tsx`](frontend/tests/test_App.test.tsx) | [`frontend/src/App.tsx`](frontend/src/App.tsx) (smoke render with mocked GraphQL) |
 
@@ -59,6 +97,10 @@ pytest
 cd frontend
 npm test
 ```
+
+### Continuous integration
+
+On **push** and **pull_request** to **`main`**, [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs **pytest** in `backend/` and **`npm ci` + `npm run build`** in `frontend/`.
 
 ## Frontend setup
 
@@ -75,8 +117,8 @@ Open the URL Vite prints (usually `http://localhost:5173`). CORS allows that ori
 
 ## What we skipped (time / scope)
 
-- **No seed script in repo**: use the in-app **People & skills** section or Django admin if you want starter rows.
-- **No Docker**, pagination, auth, or loading skeletons — kept small on purpose.
+- **No Docker** — local venv + `npm run dev` only (CI uses GitHub Actions for regression checks).
+- No pagination, auth on the API, or loading skeletons — kept small on purpose.
 - **Client-side averages**: the API returns flat lists; the UI aggregates. For large histories, a dedicated aggregated field or pagination would be the next step.
 
 ## Submitting
