@@ -1,10 +1,11 @@
 import { useMutation, useQuery } from '@apollo/client/react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   ADD_ASSESSMENT,
   ADD_EMPLOYEE,
   ADD_SKILL,
   ALL_DATA,
+  DELETE_ASSESSMENT,
 } from './graphql/documents'
 import './App.css'
 import {
@@ -37,6 +38,13 @@ type AddSkillResult = {
   }
 }
 
+type DeleteAssessmentResult = {
+  deleteAssessment: {
+    ok: boolean
+    error: string | null
+  }
+}
+
 function App() {
   const { data, loading, error, refetch } = useQuery<{
     allData: {
@@ -51,6 +59,19 @@ function App() {
   const [addEmployee, { loading: savingEmployee }] =
     useMutation<AddEmployeeResult>(ADD_EMPLOYEE)
   const [addSkill, { loading: savingSkill }] = useMutation<AddSkillResult>(ADD_SKILL)
+  const [deleteAssessment] = useMutation<DeleteAssessmentResult>(DELETE_ASSESSMENT)
+
+  const [successNotice, setSuccessNotice] = useState<string | null>(null)
+  const [exportingCsv, setExportingCsv] = useState(false)
+  const [deletingAssessmentId, setDeletingAssessmentId] = useState<string | null>(
+    null,
+  )
+
+  useEffect(() => {
+    if (!successNotice) return
+    const t = window.setTimeout(() => setSuccessNotice(null), 3000)
+    return () => window.clearTimeout(t)
+  }, [successNotice])
 
   const employees = useMemo(
     () => data?.allData.employees ?? [],
@@ -82,15 +103,23 @@ function App() {
     [skills],
   )
 
+  const recentAssessments = useMemo(() => {
+    return [...assessments]
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .slice(0, 25)
+  }, [assessments])
+
   async function handleAddEmployee(e: React.FormEvent) {
     e.preventDefault()
     setTeamEmployeeMsg(null)
+    setSuccessNotice(null)
     const { data: mut } = await addEmployee({
       variables: { name: newEmployeeName },
     })
     if (mut?.addEmployee?.ok) {
       setNewEmployeeName('')
       await refetch()
+      setSuccessNotice('Person added.')
     } else {
       setTeamEmployeeMsg(mut?.addEmployee?.error ?? 'Could not add person.')
     }
@@ -99,12 +128,14 @@ function App() {
   async function handleAddSkill(e: React.FormEvent) {
     e.preventDefault()
     setTeamSkillMsg(null)
+    setSuccessNotice(null)
     const { data: mut } = await addSkill({
       variables: { name: newSkillName },
     })
     if (mut?.addSkill?.ok) {
       setNewSkillName('')
       await refetch()
+      setSuccessNotice('Skill added.')
     } else {
       setTeamSkillMsg(mut?.addSkill?.error ?? 'Could not add skill.')
     }
@@ -113,6 +144,7 @@ function App() {
   async function handleAssessmentSubmit(e: React.FormEvent) {
     e.preventDefault()
     setAssessmentMsg(null)
+    setSuccessNotice(null)
     const eid = Number(employeeId)
     const sid = Number(skillId)
     const sc = Number(score)
@@ -139,6 +171,35 @@ function App() {
       return
     }
     await refetch()
+    setSuccessNotice('Assessment saved.')
+  }
+
+  async function handleExportCsv() {
+    if (employees.length === 0 || skills.length === 0) return
+    setExportingCsv(true)
+    await Promise.resolve()
+    try {
+      const csv = buildMatrixCsv(employees, skills, assessments)
+      downloadCsvFile(csv, matrixCsvFilename())
+    } finally {
+      setExportingCsv(false)
+    }
+  }
+
+  async function handleDeleteAssessment(id: string) {
+    setSuccessNotice(null)
+    setDeletingAssessmentId(id)
+    try {
+      const { data: mut } = await deleteAssessment({
+        variables: { assessmentId: Number(id) },
+      })
+      if (mut?.deleteAssessment?.ok) {
+        await refetch()
+        setSuccessNotice('Assessment removed.')
+      }
+    } finally {
+      setDeletingAssessmentId(null)
+    }
   }
 
   if (loading)
@@ -179,6 +240,12 @@ function App() {
           ).
         </p>
       </header>
+
+      {successNotice ? (
+        <p className="notice notice--success" role="status">
+          {successNotice}
+        </p>
+      ) : null}
 
       <section className="panel" aria-labelledby="people-skills-heading">
         <h2 id="people-skills-heading">People &amp; skills</h2>
@@ -243,18 +310,25 @@ function App() {
       </section>
 
       <section className="panel" aria-labelledby="matrix-heading">
-        <div className="panel-head">
-          <h2 id="matrix-heading">Score matrix</h2>
+        <div className="panel-head panel-head--matrix">
+          <div className="panel-head-text">
+            <h2 id="matrix-heading">Score matrix</h2>
+            <p className="matrix-legend muted">
+              Cells highlighted in red: average score <strong>below 3</strong>{' '}
+              (needs attention).
+            </p>
+          </div>
           <button
             type="button"
             className="btn btn--secondary"
-            disabled={employees.length === 0 || skills.length === 0}
-            onClick={() => {
-              const csv = buildMatrixCsv(employees, skills, assessments)
-              downloadCsvFile(csv, matrixCsvFilename())
-            }}
+            disabled={
+              employees.length === 0 ||
+              skills.length === 0 ||
+              exportingCsv
+            }
+            onClick={() => void handleExportCsv()}
           >
-            Export matrix (CSV)
+            {exportingCsv ? 'Exporting…' : 'Export matrix (CSV)'}
           </button>
         </div>
         {employees.length === 0 || skills.length === 0 ? (
@@ -314,6 +388,55 @@ function App() {
                         </td>
                       )
                     })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      <section className="panel" aria-labelledby="recent-assessments-heading">
+        <h2 id="recent-assessments-heading">Recent assessments</h2>
+        <p className="muted panel-intro">
+          Latest entries (up to 25). Remove a row to correct mistakes without
+          using the admin.
+        </p>
+        {recentAssessments.length === 0 ? (
+          <p className="muted">No assessments yet.</p>
+        ) : (
+          <div className="table-wrap table-wrap--compact">
+            <table className="recent-table">
+              <thead>
+                <tr>
+                  <th scope="col">Date</th>
+                  <th scope="col">Person</th>
+                  <th scope="col">Skill</th>
+                  <th scope="col">Score</th>
+                  <th scope="col">
+                    <span className="sr-only">Delete</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentAssessments.map((a) => (
+                  <tr key={a.id}>
+                    <td>{a.date}</td>
+                    <td>{a.employee.name}</td>
+                    <td>{a.skill.name}</td>
+                    <td>{a.score}</td>
+                    <td>
+                      <button
+                        type="button"
+                        className="btn-icon"
+                        title="Delete assessment"
+                        aria-label={`Delete assessment ${a.id}`}
+                        disabled={deletingAssessmentId === a.id}
+                        onClick={() => void handleDeleteAssessment(a.id)}
+                      >
+                        {deletingAssessmentId === a.id ? '…' : '🗑'}
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>

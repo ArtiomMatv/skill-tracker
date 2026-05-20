@@ -19,9 +19,11 @@ export const ALL_DATA = gql`
         date
         employee {
           id
+          name
         }
         skill {
           id
+          name
         }
       }
     }
@@ -49,9 +51,11 @@ export const ADD_ASSESSMENT = gql`
         date
         employee {
           id
+          name
         }
         skill {
           id
+          name
         }
       }
     }
@@ -80,6 +84,15 @@ export const ADD_SKILL = gql`
         id
         name
       }
+    }
+  }
+`
+
+export const DELETE_ASSESSMENT = gql`
+  mutation DeleteAssessment($assessmentId: Int!) {
+    deleteAssessment(assessmentId: $assessmentId) {
+      ok
+      error
     }
   }
 `

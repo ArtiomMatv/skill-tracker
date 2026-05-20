@@ -6,8 +6,8 @@ export type Assessment = {
   id: string
   score: number
   date: string
-  employee: { id: string }
-  skill: { id: string }
+  employee: { id: string; name: string }
+  skill: { id: string; name: string }
 }
 
 export function todayISODate(now: Date = new Date()): string {

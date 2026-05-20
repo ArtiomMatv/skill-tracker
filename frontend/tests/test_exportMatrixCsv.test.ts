@@ -15,26 +15,27 @@ describe('exportMatrixCsv', () => {
         id: 'a',
         score: 2,
         date: '2026-01-01',
-        employee: { id: '1' },
-        skill: { id: '10' },
+        employee: { id: '1', name: 'Zoe' },
+        skill: { id: '10', name: 'Alpha' },
       },
       {
         id: 'b',
         score: 4,
         date: '2026-02-01',
-        employee: { id: '1' },
-        skill: { id: '10' },
+        employee: { id: '1', name: 'Zoe' },
+        skill: { id: '10', name: 'Alpha' },
       },
     ]
 
     const csv = buildMatrixCsv(employees, skills, assessments)
-    expect(csv.startsWith('\ufeff')).toBe(true)
+    expect(csv.startsWith('\ufeffsep=,\r\n')).toBe(true)
     expect(csv).toContain('Employee')
     expect(csv).toContain('Alpha')
     expect(csv).toContain('Beta')
     expect(csv).toContain('Zoe')
     expect(csv).toContain('3.00')
-    const dataLine = csv.split('\r\n')[1]
-    expect(dataLine).toMatch(/^Zoe,3\.00,$/)
+    const lines = csv.split(/\r\n/)
+    expect(lines[1]).toMatch(/^Employee,/)
+    expect(lines[2]).toMatch(/^Zoe,3\.00,$/)
   })
 })

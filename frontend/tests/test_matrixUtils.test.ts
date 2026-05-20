@@ -23,22 +23,22 @@ describe('matrixUtils', () => {
         id: '1',
         score: 2,
         date: '2026-01-01',
-        employee: { id: '10' },
-        skill: { id: '20' },
+        employee: { id: '10', name: 'E' },
+        skill: { id: '20', name: 'S' },
       },
       {
         id: '2',
         score: 4,
         date: '2026-02-01',
-        employee: { id: '10' },
-        skill: { id: '20' },
+        employee: { id: '10', name: 'E' },
+        skill: { id: '20', name: 'S' },
       },
       {
         id: '3',
         score: 5,
         date: '2026-01-15',
-        employee: { id: '11' },
-        skill: { id: '20' },
+        employee: { id: '11', name: 'F' },
+        skill: { id: '20', name: 'S' },
       },
     ]
 

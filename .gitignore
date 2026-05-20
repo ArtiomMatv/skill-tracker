@@ -1,4 +1,6 @@
 # Python
+backend/requirements*.tmp
+backend/requirements_merged.txt
 backend/.venv/
 backend/**/__pycache__/
 *.py[cod]

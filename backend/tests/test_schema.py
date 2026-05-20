@@ -172,3 +172,36 @@ def test_add_skill_success(graphql_client) -> None:
     assert res["ok"] is True
     assert res["skill"]["name"] == "Compliance"
     assert Skill.objects.count() == 1
+
+
+@pytest.mark.django_db
+def test_delete_assessment_success(graphql_client) -> None:
+    emp = Employee.objects.create(name="Del")
+    skill = Skill.objects.create(name="S")
+    a = Assessment.objects.create(
+        employee=emp, skill=skill, score=4, date=date(2026, 6, 1)
+    )
+    r = _graphql(
+        graphql_client,
+        """
+        mutation {
+          deleteAssessment(assessmentId: %d) { ok error }
+        }
+        """
+        % a.pk,
+    )
+    assert r.status_code == 200
+    res = r.json()["data"]["deleteAssessment"]
+    assert res["ok"] is True
+    assert Assessment.objects.filter(pk=a.pk).count() == 0
+
+
+@pytest.mark.django_db
+def test_delete_assessment_not_found(graphql_client) -> None:
+    r = _graphql(
+        graphql_client,
+        'mutation { deleteAssessment(assessmentId: 999999) { ok error } }',
+    )
+    res = r.json()["data"]["deleteAssessment"]
+    assert res["ok"] is False
+    assert "not found" in res["error"].lower()

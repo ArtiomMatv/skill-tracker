@@ -7,6 +7,25 @@ Small full-stack demo: Django + Graphene GraphQL API (SQLite) and a React + Type
 - **Python** 3.12+ (tested with 3.12)
 - **Node.js** 20+ (or current LTS; Vite 8 may warn on other versions)
 
+## Docker (optional)
+
+From the repo root (requires [Docker Compose](https://docs.docker.com/compose/)):
+
+```bash
+docker compose up --build
+```
+
+- **UI (nginx, static build):** http://localhost:8080/
+- **API:** http://127.0.0.1:8000/graphql/ (GraphiQL in DEBUG)
+
+The frontend image bakes in `VITE_GRAPHQL_URL=http://127.0.0.1:8000/graphql/` at **build time** so the browser (on your machine) talks to the API on port 8000. SQLite lives in a named volume (`SQLITE_PATH=/data/db.sqlite3`).
+
+Load demo data once:
+
+```bash
+docker compose run --rm api python manage.py seed_demo
+```
+
 ## 60-second reviewer path
 
 From zero to a filled matrix:
@@ -34,7 +53,7 @@ npm run dev
 
 1. Open the URL Vite prints (usually **http://localhost:5173/**).
 2. Scroll to **Score matrix** — you should see demo people × skills with averages; some cells are **below 3** (highlighted).
-3. Click **Export matrix (CSV)** to download the same numbers as CSV.
+3. Click **Export matrix (CSV)** to download the same numbers as CSV. The file starts with an Excel **`sep=,`** line so **comma** is used as the column delimiter even when Windows is set to **semicolon** (otherwise everything can land in one column). If it still opens wrong, use **Data → From Text/CSV** and pick comma as delimiter.
 4. Optionally use **Log assessment** or **People & skills** to mutate data.
 
 **URLs:** Use **http://127.0.0.1:8000/** or **http://localhost:8000/** for the API and admin in the browser. Do **not** open **http://0.0.0.0:8000/** — `0.0.0.0` is only a bind address for `runserver`, not a valid `Host` header (Django returns `DisallowedHost`).
@@ -117,9 +136,9 @@ Open the URL Vite prints (usually `http://localhost:5173`). CORS allows that ori
 
 ## What we skipped (time / scope)
 
-- **No Docker** — local venv + `npm run dev` only (CI uses GitHub Actions for regression checks).
-- No pagination, auth on the API, or loading skeletons — kept small on purpose.
-- **Client-side averages**: the API returns flat lists; the UI aggregates. For large histories, a dedicated aggregated field or pagination would be the next step.
+- **No production hardening** (secrets, HTTPS, hardened Django settings) — demo only.
+- No pagination on assessments in GraphQL; no auth on the API.
+- **Client-side averages**: the API returns flat lists; the UI aggregates.
 
 ## Submitting
 

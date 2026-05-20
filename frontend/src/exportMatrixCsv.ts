@@ -6,6 +6,9 @@ import { averageForCell, type Assessment, type Employee, type Skill } from './ma
 
 const BOM = '\ufeff'
 
+/** Excel (many locales) uses `;` as list separator; this first line forces `,` for this file. */
+const EXCEL_SEP_HINT = 'sep=,'
+
 function csvEscapeField(value: string): string {
   if (/[",\r\n]/.test(value)) {
     return `"${value.replace(/"/g, '""')}"`
@@ -42,7 +45,7 @@ export function buildMatrixCsv(
   }
 
   const body = rows.map((r) => r.join(',')).join('\r\n')
-  return `${BOM}${body}\r\n`
+  return `${BOM}${EXCEL_SEP_HINT}\r\n${body}\r\n`
 }
 
 export function matrixCsvFilename(now: Date = new Date()): string {

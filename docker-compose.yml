@@ -1,0 +1,20 @@
+services:
+  api:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      SQLITE_PATH: /data/db.sqlite3
+    volumes:
+      - skill_tracker_data:/data
+
+  web:
+    build:
+      context: ./frontend
+      args:
+        VITE_GRAPHQL_URL: http://127.0.0.1:8000/graphql/
+    ports:
+      - "8080:80"
+
+volumes:
+  skill_tracker_data:

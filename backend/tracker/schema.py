@@ -102,10 +102,25 @@ class AddSkill(graphene.Mutation):
         return AddSkill(ok=True, skill=skill, error=None)
 
 
+class DeleteAssessment(graphene.Mutation):
+    class Arguments:
+        assessment_id = graphene.Int(required=True)
+
+    ok = graphene.Boolean(required=True)
+    error = graphene.String()
+
+    def mutate(self, info, assessment_id: int):
+        deleted, _ = Assessment.objects.filter(pk=assessment_id).delete()
+        if deleted == 0:
+            return DeleteAssessment(ok=False, error="Assessment not found.")
+        return DeleteAssessment(ok=True, error=None)
+
+
 class Mutation(graphene.ObjectType):
     add_assessment = AddAssessment.Field()
     add_employee = AddEmployee.Field()
     add_skill = AddSkill.Field()
+    delete_assessment = DeleteAssessment.Field()
 
 
 schema = graphene.Schema(query=Query, mutation=Mutation)
