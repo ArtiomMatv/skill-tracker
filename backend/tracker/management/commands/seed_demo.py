@@ -1,8 +1,14 @@
 from datetime import date
 
+from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 
 from tracker.models import Assessment, Employee, Skill
+
+# Used only with --dev-login when no superuser exists (local REQUIRE_AUTH demos).
+DEV_SUPERUSER_USERNAME = "localadmin"
+DEV_SUPERUSER_EMAIL = "localadmin@localhost.invalid"
+DEV_SUPERUSER_PASSWORD = "Local-only-Auth-2026!"
 
 # (employee_name, skill_name, score, date) — unique (emp, skill, date) per row for get_or_create
 SEED_ASSESSMENTS: list[tuple[str, str, int, date]] = [
@@ -24,6 +30,17 @@ SKILL_NAMES = sorted({s for _, s, _, _ in SEED_ASSESSMENTS})
 
 class Command(BaseCommand):
     help = "Create demo employees, skills, and assessments (idempotent; safe to re-run)."
+
+    def add_arguments(self, parser) -> None:
+        parser.add_argument(
+            "--dev-login",
+            action="store_true",
+            help=(
+                "If no Django superuser exists yet, create one for local REQUIRE_AUTH=1: "
+                f"username {DEV_SUPERUSER_USERNAME!r} (password printed once; also in README). "
+                "Sign in via the SPA at http://localhost:5173/ — no extra terminal step after this."
+            ),
+        )
 
     def handle(self, *args, **options):
         created_emp = created_skill = created_a = 0
@@ -71,3 +88,26 @@ class Command(BaseCommand):
             "GraphQL: http://127.0.0.1:8000/graphql/  |  "
             "Open the SPA and check the matrix (Ada/GraphQL avg 2.5; Bob/Safety avg 2.0)."
         )
+
+        if options["dev_login"]:
+            User = get_user_model()
+            if User.objects.filter(is_superuser=True).exists():
+                self.stdout.write(
+                    "Dev login: a superuser already exists; skipped creating "
+                    f"{DEV_SUPERUSER_USERNAME!r}."
+                )
+            else:
+                User.objects.create_superuser(
+                    DEV_SUPERUSER_USERNAME,
+                    DEV_SUPERUSER_EMAIL,
+                    DEV_SUPERUSER_PASSWORD,
+                )
+                self.stdout.write(
+                    self.style.WARNING(
+                        f"Dev login: created superuser {DEV_SUPERUSER_USERNAME!r}. "
+                        f"Use this password in the SPA sign-in form: {DEV_SUPERUSER_PASSWORD!r}"
+                    )
+                )
+                self.stdout.write(
+                    "Do not use --dev-login or this account in production; rotate if this DB is shared."
+                )

@@ -17,6 +17,6 @@ class SkillAdmin(admin.ModelAdmin):
 
 @admin.register(Assessment)
 class AssessmentAdmin(admin.ModelAdmin):
-    list_display = ("id", "employee", "skill", "score", "date")
+    list_display = ("id", "employee", "skill", "score", "date", "notes", "deleted_at")
     list_filter = ("date", "skill")
     autocomplete_fields = ("employee", "skill")

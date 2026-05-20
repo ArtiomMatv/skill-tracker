@@ -2,7 +2,12 @@
  * Build a CSV string for the score matrix (same averages as the UI, sorted by name).
  * UTF-8 BOM prefix helps Excel open UTF-8 correctly on Windows.
  */
-import { averageForCell, type Assessment, type Employee, type Skill } from './matrixUtils'
+import {
+  averageFromCells,
+  type Employee,
+  type MatrixCell,
+  type Skill,
+} from './matrixUtils'
 
 const BOM = '\ufeff'
 
@@ -24,7 +29,7 @@ function sortByName<T extends { name: string }>(items: T[]): T[] {
 export function buildMatrixCsv(
   employees: Employee[],
   skills: Skill[],
-  assessments: Assessment[],
+  cells: MatrixCell[],
 ): string {
   const rows: string[][] = []
   const header = [
@@ -36,7 +41,7 @@ export function buildMatrixCsv(
   for (const emp of sortByName(employees)) {
     const line: string[] = [csvEscapeField(emp.name)]
     for (const sk of sortByName(skills)) {
-      const cell = averageForCell(assessments, emp.id, sk.id)
+      const cell = averageFromCells(cells, emp.id, sk.id)
       line.push(
         cell != null ? csvEscapeField(cell.average.toFixed(2)) : '',
       )

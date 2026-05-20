@@ -1,13 +1,9 @@
 /**
- * Tests for ``src/matrixUtils.ts`` (`todayISODate`, `averageForCell`).
+ * Tests for ``src/matrixUtils.ts`` (`todayISODate`, `averageFromCells`).
  */
 import { describe, expect, it } from 'vitest'
 
-import {
-  averageForCell,
-  todayISODate,
-  type Assessment,
-} from '../src/matrixUtils'
+import { averageFromCells, todayISODate, type MatrixCell } from '../src/matrixUtils'
 
 describe('matrixUtils', () => {
   describe('todayISODate', () => {
@@ -17,37 +13,17 @@ describe('matrixUtils', () => {
     })
   })
 
-  describe('averageForCell', () => {
-    const assessments: Assessment[] = [
-      {
-        id: '1',
-        score: 2,
-        date: '2026-01-01',
-        employee: { id: '10', name: 'E' },
-        skill: { id: '20', name: 'S' },
-      },
-      {
-        id: '2',
-        score: 4,
-        date: '2026-02-01',
-        employee: { id: '10', name: 'E' },
-        skill: { id: '20', name: 'S' },
-      },
-      {
-        id: '3',
-        score: 5,
-        date: '2026-01-15',
-        employee: { id: '11', name: 'F' },
-        skill: { id: '20', name: 'S' },
-      },
+  describe('averageFromCells', () => {
+    const cells: MatrixCell[] = [
+      { employeeId: '10', skillId: '20', average: 3, count: 2 },
     ]
 
-    it('returns null when there are no matching assessments', () => {
-      expect(averageForCell(assessments, '99', '20')).toBeNull()
+    it('returns null when no cell matches', () => {
+      expect(averageFromCells(cells, '99', '20')).toBeNull()
     })
 
-    it('computes average and count for employee/skill pair', () => {
-      expect(averageForCell(assessments, '10', '20')).toEqual({
+    it('returns average from pre-aggregated cell', () => {
+      expect(averageFromCells(cells, '10', '20')).toEqual({
         average: 3,
         count: 2,
       })

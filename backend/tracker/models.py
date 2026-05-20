@@ -34,6 +34,8 @@ class Assessment(models.Model):
     skill = models.ForeignKey(Skill, on_delete=models.CASCADE, related_name="assessments")
     score = models.PositiveSmallIntegerField(validators=[validate_score])
     date = models.DateField()
+    notes = models.TextField(blank=True)
+    deleted_at = models.DateTimeField(null=True, blank=True, db_index=True)
 
     class Meta:
         ordering = ["-date", "id"]

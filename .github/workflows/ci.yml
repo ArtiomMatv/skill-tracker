@@ -36,7 +36,32 @@ jobs:
           node-version: "22"
           cache: "npm"
           cache-dependency-path: frontend/package-lock.json
-      - name: Install and build
+      - name: Install, codegen, and build
         run: |
           npm ci
+          npm run codegen
           npm run build
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and start stack
+        run: docker compose up -d --build --wait
+      - name: Migrate and seed
+        run: |
+          docker compose exec -T api python manage.py migrate
+          docker compose exec -T api python manage.py seed_demo
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+      - name: Playwright
+        working-directory: frontend
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          npm run test:e2e
+        env:
+          PLAYWRIGHT_BASE_URL: http://127.0.0.1:8080

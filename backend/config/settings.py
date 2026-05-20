@@ -50,6 +50,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "tracker.middleware.RequireAuthMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -81,12 +82,24 @@ _sqlite_name = os.environ.get("SQLITE_PATH")
 if _sqlite_name:
     _sqlite_name = Path(_sqlite_name)
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": _sqlite_name if _sqlite_name else BASE_DIR / "db.sqlite3",
+_database_url = os.environ.get("DATABASE_URL")
+if _database_url:
+    import dj_database_url
+
+    DATABASES = {
+        "default": dj_database_url.config(
+            default=_database_url,
+            conn_max_age=600,
+            ssl_require=os.environ.get("DATABASE_SSL_REQUIRE") == "1",
+        )
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": _sqlite_name if _sqlite_name else BASE_DIR / "db.sqlite3",
+        }
+    }
 
 
 # Password validation
@@ -125,13 +138,23 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 
-# CORS (Vite dev server)
+# Optional: set REQUIRE_AUTH=1 to require Django session (see /api/auth/login/).
+REQUIRE_AUTH = os.environ.get("REQUIRE_AUTH") == "1"
+
+# Allow POST /api/auth/register/ when DEBUG is True, or when this is set (non-debug demos only).
+ALLOW_REGISTER = os.environ.get("ALLOW_REGISTER") == "1"
+
+# CORS (Vite dev server + docker nginx)
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "http://localhost:8080",
     "http://127.0.0.1:8080",
 ]
+
+CORS_ALLOW_CREDENTIALS = True
+
+CSRF_TRUSTED_ORIGINS = list(CORS_ALLOWED_ORIGINS)
 
 GRAPHENE = {
     "SCHEMA": "tracker.schema.schema",

@@ -1,0 +1,27 @@
+# Optional Postgres for local/Compose. Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.postgres.yml up --build
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: skill
+      POSTGRES_PASSWORD: skill
+      POSTGRES_DB: skilltracker
+    volumes:
+      - skill_tracker_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U skill -d skilltracker"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    environment:
+      DATABASE_URL: postgres://skill:skill@db:5432/skilltracker
+      SQLITE_PATH: ""
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  skill_tracker_pg:

@@ -7,14 +7,30 @@ services:
       SQLITE_PATH: /data/db.sqlite3
     volumes:
       - skill_tracker_data:/data
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz/')",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
 
   web:
     build:
-      context: ./frontend
+      context: .
+      dockerfile: frontend/Dockerfile
       args:
         VITE_GRAPHQL_URL: http://127.0.0.1:8000/graphql/
     ports:
       - "8080:80"
+    depends_on:
+      api:
+        condition: service_healthy
 
 volumes:
   skill_tracker_data:

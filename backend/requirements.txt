@@ -1,6 +1,8 @@
 asgiref==3.11.1
 Django==6.0.5
 django-cors-headers==4.9.0
+dj-database-url==2.3.0
+gunicorn==23.0.0
 graphene==3.4.3
 graphene-django==3.2.3
 graphql-core==3.2.8

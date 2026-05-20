@@ -1,0 +1,124 @@
+type Query {
+  allData: AllDataType!
+  matrixCells: [MatrixCellType!]!
+  assessments(limit: Int = 25, offset: Int = 0, order: AssessmentsOrder = DATE_DESC, employeeId: Int, skillId: Int, scoreLt: Int): AssessmentsPageType!
+}
+
+type AllDataType {
+  employees: [EmployeeType!]!
+  skills: [SkillType!]!
+}
+
+type EmployeeType {
+  id: ID!
+  name: String!
+}
+
+type SkillType {
+  id: ID!
+  name: String!
+}
+
+type MatrixCellType {
+  employeeId: Int!
+  skillId: Int!
+  average: Float!
+  count: Int!
+}
+
+type AssessmentsPageType {
+  items: [AssessmentType!]!
+  totalCount: Int!
+}
+
+type AssessmentType {
+  id: ID!
+  employee: EmployeeType!
+  skill: SkillType!
+  score: Int!
+  date: Date!
+  notes: String!
+}
+
+"""
+The `Date` scalar type represents a Date
+value as specified by
+[iso8601](https://en.wikipedia.org/wiki/ISO_8601).
+"""
+scalar Date
+
+enum AssessmentsOrder {
+  DATE_DESC
+  DATE_ASC
+}
+
+type Mutation {
+  addAssessment(date: Date!, employeeId: Int!, notes: String, score: Int!, skillId: Int!): AddAssessment
+  updateAssessment(assessmentId: Int!, date: Date!, notes: String, score: Int!): UpdateAssessment
+  addEmployee(name: String!): AddEmployee
+  addSkill(name: String!): AddSkill
+  deleteAssessment(assessmentId: Int!): DeleteAssessment
+  restoreAssessment(assessmentId: Int!): RestoreAssessment
+  finalizeDeleteAssessment(assessmentId: Int!): FinalizeDeleteAssessment
+
+  """
+  Insert many assessments from parsed rows (strict: employee and skill must exist by id).
+  """
+  bulkImportAssessments(rows: [BulkImportRowInput!]!): BulkImportAssessments
+}
+
+type AddAssessment {
+  assessment: AssessmentType
+  ok: Boolean!
+  error: String
+}
+
+type UpdateAssessment {
+  assessment: AssessmentType
+  ok: Boolean!
+  error: String
+}
+
+type AddEmployee {
+  employee: EmployeeType
+  ok: Boolean!
+  error: String
+}
+
+type AddSkill {
+  skill: SkillType
+  ok: Boolean!
+  error: String
+}
+
+type DeleteAssessment {
+  ok: Boolean!
+  error: String
+}
+
+type RestoreAssessment {
+  ok: Boolean!
+  error: String
+}
+
+type FinalizeDeleteAssessment {
+  ok: Boolean!
+  error: String
+}
+
+"""
+Insert many assessments from parsed rows (strict: employee and skill must exist by id).
+"""
+type BulkImportAssessments {
+  createdCount: Int!
+  ok: Boolean!
+  error: String
+}
+
+input BulkImportRowInput {
+  employeeId: Int!
+  skillId: Int!
+  score: Int!
+  date: Date!
+  notes: String
+}

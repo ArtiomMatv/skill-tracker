@@ -1,0 +1,43 @@
+# Render blueprint (adjust names / regions). Requires linked Postgres for the API service.
+# https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: skill-tracker-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: starter
+    healthCheckPath: /healthz/
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings
+      - key: DEBUG
+        value: "0"
+      - key: ALLOWED_HOSTS
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: skill-tracker-db
+          property: connectionString
+      - key: CSRF_TRUSTED_ORIGINS
+        sync: false
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+
+  - type: static
+    name: skill-tracker-web
+    buildCommand: cd frontend && npm ci && npm run codegen && npm run build
+    staticPublishPath: frontend/dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_GRAPHQL_URL
+        sync: false
+
+databases:
+  - name: skill-tracker-db
+    plan: free
